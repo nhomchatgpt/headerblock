@@ -10,7 +10,6 @@ import (
 // Config the plugin configuration.
 type Config struct {
 	RequestHeaders  []HeaderConfig `json:"requestHeaders,omitempty"`
-	ResponseHeaders []HeaderConfig `json:"responseHeaders,omitempty"`
 }
 
 // HeaderConfig is part of the plugin configuration.
@@ -33,7 +32,6 @@ func CreateConfig() *Config {
 type headerBlock struct {
 	next                http.Handler
 	requestHeaderRules  []rule
-	responseHeaderRules []rule
 }
 
 // New creates a new headerBlock plugin.
@@ -41,7 +39,6 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 	return &headerBlock{
 		next:                next,
 		requestHeaderRules:  prepareRules(config.RequestHeaders),
-		responseHeaderRules: prepareRules(config.ResponseHeaders),
 	}, nil
 }
 
@@ -63,13 +60,11 @@ func prepareRules(headerConfig []HeaderConfig) []rule {
 func (c *headerBlock) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	for name, values := range req.Header {
 		for _, rule := range c.requestHeaderRules {
-			applyRule(req.Header, rule, name, values)
-		}
-	}
-	c.next.ServeHTTP(rw, req)
-	for name, values := range rw.Header() {
-		for _, rule := range c.responseHeaderRules {
-			applyRule(rw.Header(), rule, name, values)
+			if (applyRule(req.Header, rule, name, values) == true) {
+				log.Printf("%s: access denied - blocked header: %s", req.URL.String(), name)
+				rw.WriteHeader(http.StatusForbidden)
+				return
+			}
 		}
 	}
 }
@@ -77,7 +72,7 @@ func (c *headerBlock) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 func applyRule(headers http.Header, rule rule, name string, values []string) {
 	nameMatch := rule.name != nil && rule.name.MatchString(name)
 	if rule.value == nil && nameMatch {
-		headers.Del(name)
+		return true
 	} else if rule.value != nil && (nameMatch || rule.name == nil) {
 		changed := false
 		for i := 0; i < len(values); i++ {
@@ -88,10 +83,8 @@ func applyRule(headers http.Header, rule rule, name string, values []string) {
 			}
 		}
 		if changed {
-			headers.Del(name)
-			for _, value := range values {
-				headers.Add(name, value)
-			}
+			return true
 		}
 	}
+        return false
 }
