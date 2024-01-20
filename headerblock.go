@@ -69,7 +69,7 @@ func (c *headerBlock) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func applyRule(headers http.Header, rule rule, name string, values []string) {
+func applyRule(headers http.Header, rule rule, name string, values []string) bool {
 	nameMatch := rule.name != nil && rule.name.MatchString(name)
 	if rule.value == nil && nameMatch {
 		return true
