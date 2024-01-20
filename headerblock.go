@@ -5,6 +5,7 @@ import (
 	"context"
 	"net/http"
 	"regexp"
+	"log"
 )
 
 // Config the plugin configuration.

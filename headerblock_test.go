@@ -36,9 +36,9 @@ func TestPlugin(t *testing.T) {
 
 	t.Run("ValidUserAgent", func(t *testing.T) {
 		cfg := tbua.CreateConfig()
-		cfg.RequestHeaders = append(cfg.RequestHeaders, headerblock.HeaderConfig{
-		Name:  "User-Agent",
-		Value: "SpamBot",
+		cfg.RequestHeaders = append(cfg.RequestHeaders, tbua.HeaderConfig{
+		    Name:  "User-Agent",
+		    Value: "SpamBot",
 		})
 
 		p, err := tbua.New(context.Background(), noopHandler{}, cfg, pluginName)
@@ -58,9 +58,9 @@ func TestPlugin(t *testing.T) {
 
 	t.Run("ForbiddenUserAgent", func(t *testing.T) {
 		cfg := tbua.CreateConfig()
-		cfg.RequestHeaders = append(cfg.RequestHeaders, headerblock.HeaderConfig{
-		Name:  "User-Agent",
-		Value: "Googlebot",
+		cfg.RequestHeaders = append(cfg.RequestHeaders, tbua.HeaderConfig{
+		    Name:  "User-Agent",
+		    Value: "Googlebot",
 		})
 
 		p, err := tbua.New(context.Background(), noopHandler{}, cfg, pluginName)
