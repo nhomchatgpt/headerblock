@@ -68,6 +68,8 @@ func (c *headerBlock) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 			}
 		}
 	}
+
+	c.next.ServeHTTP(rw, req)
 }
 
 func applyRule(headers http.Header, rule rule, name string, values []string) bool {
