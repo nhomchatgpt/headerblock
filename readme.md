@@ -14,7 +14,14 @@ experimental:
   plugins:
     headerblock:
       moduleName: "github.com/wzator/headerblock"
-      version: "v0.0.1"
+      version: "v0.0.2"
+```
+
+### Docker-Compose
+
+```yaml
+      - "--experimental.plugins.headerblock.modulename=github.com/wzator/headerblock"
+      - "--experimental.plugins.headerblock.version=v0.0.2"
 ```
 
 ### Dynamic
@@ -30,7 +37,7 @@ http:
               value: "value"
 ```
 
-### Example
+### Example headerblock.yaml
 
 ```yaml
 http:
@@ -50,3 +57,15 @@ http:
             - name: "User-Agent"
               value: "AhrefsBot"
 ```
+
+### Example docker-compose.yml
+
+```yaml
+      # Settle the ports for the entry points
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web-secure.address=:443"
+      - "--entrypoints.web-secure.http.middlewares=headerblock@file${TRAEFIK_PLUGINS:-}"
+      - "--experimental.plugins.headerblock.modulename=github.com/wzator/headerblock"
+      - "--experimental.plugins.headerblock.version=v0.0.2"
+```
+
