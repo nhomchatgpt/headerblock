@@ -28,3 +28,25 @@ http:
           requestHeaders:
             - name: "name"
               value: "value"
+```
+
+### Example
+
+```yaml
+http:
+  middlewares:
+    headerblock:
+      plugin:
+        headerblock:
+          requestHeaders:
+            - name: "User-Agent"
+              value: "MJ12bot"
+            - name: "User-Agent"
+              value: "Amazonbot"
+            - name: "User-Agent"
+              value: "SemrushBot"
+            - name: "User-Agent"
+              value: "Applebot"
+            - name: "User-Agent"
+              value: "AhrefsBot"
+```
