@@ -3,14 +3,14 @@ package headerblock
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"regexp"
-	"log"
 )
 
 // Config the plugin configuration.
 type Config struct {
-	RequestHeaders  []HeaderConfig `json:"requestHeaders,omitempty"`
+	RequestHeaders []HeaderConfig `json:"requestHeaders,omitempty"`
 }
 
 // HeaderConfig is part of the plugin configuration.
@@ -31,15 +31,15 @@ func CreateConfig() *Config {
 
 // headerBlock a Traefik plugin.
 type headerBlock struct {
-	next                http.Handler
-	requestHeaderRules  []rule
+	next               http.Handler
+	requestHeaderRules []rule
 }
 
 // New creates a new headerBlock plugin.
 func New(ctx context.Context, next http.Handler, config *Config, name string) (http.Handler, error) {
 	return &headerBlock{
-		next:                next,
-		requestHeaderRules:  prepareRules(config.RequestHeaders),
+		next:               next,
+		requestHeaderRules: prepareRules(config.RequestHeaders),
 	}, nil
 }
 
@@ -61,7 +61,7 @@ func prepareRules(headerConfig []HeaderConfig) []rule {
 func (c *headerBlock) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	for name, values := range req.Header {
 		for _, rule := range c.requestHeaderRules {
-			if (applyRule(req.Header, rule, name, values) == true) {
+			if applyRule(rule, name, values) {
 				log.Printf("%s: access denied - blocked header: %s", req.URL.String(), name)
 				rw.WriteHeader(http.StatusForbidden)
 				return
@@ -72,22 +72,16 @@ func (c *headerBlock) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	c.next.ServeHTTP(rw, req)
 }
 
-func applyRule(headers http.Header, rule rule, name string, values []string) bool {
+func applyRule(rule rule, name string, values []string) bool {
 	nameMatch := rule.name != nil && rule.name.MatchString(name)
 	if rule.value == nil && nameMatch {
 		return true
 	} else if rule.value != nil && (nameMatch || rule.name == nil) {
-		changed := false
-		for i := 0; i < len(values); i++ {
-			if rule.value.MatchString(values[i]) {
-				values = append(values[:i], values[(i+1):]...)
-				changed = true
-				i--
+		for _, value := range values {
+			if rule.value.MatchString(value) {
+				return true
 			}
 		}
-		if changed {
-			return true
-		}
 	}
-        return false
+	return false
 }

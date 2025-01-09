@@ -18,11 +18,12 @@ func (n noopHandler) ServeHTTP(rw http.ResponseWriter, _ *http.Request) {
 }
 
 func TestPlugin(t *testing.T) {
+	// Test for requests without any User-Agent headers
 	t.Run("NoUserAgents", func(t *testing.T) {
 		cfg := tbua.CreateConfig()
 		p, err := tbua.New(context.Background(), noopHandler{}, cfg, pluginName)
 		if err != nil {
-			t.Fatalf("no error expected, but is: %v", err)
+			t.Fatalf("unexpected error during plugin creation: %v", err)
 		}
 
 		req := httptest.NewRequest(http.MethodGet, "/foobar", nil)
@@ -30,52 +31,53 @@ func TestPlugin(t *testing.T) {
 		p.ServeHTTP(rr, req)
 
 		if rr.Code != http.StatusTeapot {
-			t.Fatalf("expected: %v, is: %v", http.StatusTeapot, rr.Code)
+			t.Fatalf("unexpected status: got %v, expected %v", rr.Code, http.StatusTeapot)
 		}
 	})
 
+	// Test for requests with a non-blocked User-Agent header
 	t.Run("ValidUserAgent", func(t *testing.T) {
 		cfg := tbua.CreateConfig()
 		cfg.RequestHeaders = append(cfg.RequestHeaders, tbua.HeaderConfig{
-		    Name:  "User-Agent",
-		    Value: "SpamBot",
+			Name:  "User-Agent",
+			Value: "SpamBot",
 		})
 
 		p, err := tbua.New(context.Background(), noopHandler{}, cfg, pluginName)
 		if err != nil {
-			t.Fatalf("no error expected, but is: %v", err)
+			t.Fatalf("unexpected error during plugin creation: %v", err)
 		}
 
 		req := httptest.NewRequest(http.MethodGet, "/foobar", nil)
-		req.Header.Set("User-Agent", "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Googlebot/2.1; +http://www.google.com/bot.html) Chrome/W.X.Y.Z Safari/537.36")
+		req.Header.Set("User-Agent", "ValidUserAgent")
 		rr := httptest.NewRecorder()
 		p.ServeHTTP(rr, req)
 
 		if rr.Code != http.StatusTeapot {
-			t.Fatalf("expected: %v, is: %v", http.StatusTeapot, rr.Code)
+			t.Fatalf("unexpected status: got %v, expected %v for header %v", rr.Code, http.StatusTeapot, req.Header.Get("User-Agent"))
 		}
 	})
 
+	// Test for requests with a blocked User-Agent header
 	t.Run("ForbiddenUserAgent", func(t *testing.T) {
 		cfg := tbua.CreateConfig()
 		cfg.RequestHeaders = append(cfg.RequestHeaders, tbua.HeaderConfig{
-		    Name:  "User-Agent",
-		    Value: "Googlebot",
+			Name:  "User-Agent",
+			Value: "Googlebot",
 		})
 
 		p, err := tbua.New(context.Background(), noopHandler{}, cfg, pluginName)
 		if err != nil {
-			t.Fatalf("no error expected, but is: %v", err)
+			t.Fatalf("unexpected error during plugin creation: %v", err)
 		}
 
 		req := httptest.NewRequest(http.MethodGet, "/foobar", nil)
-		req.Header.Set("User-Agent", "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Googlebot/2.1; +http://www.google.com/bot.html) Chrome/W.X.Y.Z Safari/537.36")
+		req.Header.Set("User-Agent", "Googlebot")
 		rr := httptest.NewRecorder()
 		p.ServeHTTP(rr, req)
 
 		if rr.Code != http.StatusForbidden {
-			t.Fatalf("expected: %v, is: %v", http.StatusForbidden, rr.Code)
+			t.Fatalf("unexpected status: got %v, expected %v for header %v", rr.Code, http.StatusForbidden, req.Header.Get("User-Agent"))
 		}
 	})
 }
-
