@@ -1,7 +1,7 @@
 displayName: "Header Block"
 type: middleware
 
-import: github.com/wzator/headerblock
+import: github.com/nhomchatgpt/headerblock
 
 summary: "Header Block is a plugin to block request by headers which regex matched by their name and/or value"
 
