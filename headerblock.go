@@ -10,7 +10,9 @@ import (
 
 // Config the plugin configuration.
 type Config struct {
-	RequestHeaders []HeaderConfig `json:"requestHeaders,omitempty"`
+	RequestHeaders          []HeaderConfig `json:"requestHeaders,omitempty"`
+	WhitelistRequestHeaders []HeaderConfig `json:"whitelistRequestHeaders,omitempty"`
+	Log                     bool           `json:"log,omitempty"`
 }
 
 // HeaderConfig is part of the plugin configuration.
@@ -26,20 +28,26 @@ type rule struct {
 
 // CreateConfig creates the default plugin configuration.
 func CreateConfig() *Config {
-	return &Config{}
+	return &Config{
+		Log: false,
+	}
 }
 
 // headerBlock a Traefik plugin.
 type headerBlock struct {
-	next               http.Handler
-	requestHeaderRules []rule
+	next                  http.Handler
+	requestHeaderRules    []rule
+	whitelistRequestRules []rule
+	log                   bool
 }
 
 // New creates a new headerBlock plugin.
 func New(ctx context.Context, next http.Handler, config *Config, name string) (http.Handler, error) {
 	return &headerBlock{
-		next:               next,
-		requestHeaderRules: prepareRules(config.RequestHeaders),
+		next:                  next,
+		requestHeaderRules:    prepareRules(config.RequestHeaders),
+		whitelistRequestRules: prepareRules(config.WhitelistRequestHeaders),
+		log:                   config.Log,
 	}, nil
 }
 
@@ -59,16 +67,46 @@ func prepareRules(headerConfig []HeaderConfig) []rule {
 }
 
 func (c *headerBlock) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+	// Check whitelist rules only if they are defined
+	if len(c.whitelistRequestRules) > 0 {
+		for name, values := range req.Header {
+			for _, rule := range c.whitelistRequestRules {
+				if applyRule(rule, name, values) {
+					if c.log {
+						log.Printf("%s: access allowed - whitelisted header: %s", req.URL.String(), name)
+					}
+					c.next.ServeHTTP(rw, req)
+					return
+				}
+			}
+		}
+
+		// If no whitelist rules match, block the request
+		if c.log {
+			log.Printf("%s: access denied - no matching whitelist headers", req.URL.String())
+		}
+		rw.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	// Apply blocklist rules
 	for name, values := range req.Header {
 		for _, rule := range c.requestHeaderRules {
 			if applyRule(rule, name, values) {
-				log.Printf("%s: access denied - blocked header: %s", req.URL.String(), name)
+				// Block the request if a blocking rule matches
+				if c.log {
+					log.Printf("%s: access denied - blocked header: %s", req.URL.String(), name)
+				}
 				rw.WriteHeader(http.StatusForbidden)
 				return
 			}
 		}
 	}
 
+	// Allow the request if no rules match
+	if c.log {
+		log.Printf("%s: access allowed - no rules matched", req.URL.String())
+	}
 	c.next.ServeHTTP(rw, req)
 }
 

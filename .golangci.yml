@@ -23,8 +23,8 @@ linters-settings:
   godox:
     keywords:
       - FIXME
-  gofumpt:
-    extra-rules: true
+  # gofumpt:
+    # extra-rules: true
 
 linters:
   enable-all: true
@@ -52,6 +52,7 @@ linters:
     - lll
     - gomnd
     - forbidigo
+    - gofumpt
 
 issues:
   exclude-use-default: false

@@ -6,7 +6,10 @@ import: github.com/nhomchatgpt/headerblock
 summary: "Header Block is a plugin to block request by headers which regex matched by their name and/or value"
 
 testData:
+  log: true
   requestHeaders:
     - name: "header"
       value: "value"
-
+  whitelistRequestHeaders:
+    - name: "Cf-Ipcountry"
+      value: "VN"
