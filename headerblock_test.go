@@ -128,4 +128,37 @@ func TestPlugin(t *testing.T) {
 			t.Fatalf("unexpected status: got %v, expected %v for request with no headers", rr.Code, http.StatusTeapot)
 		}
 	})
+
+	// Test for blocking Transfer-Encoding: chunked header
+	t.Run("BlockTransferEncodingChunked", func(t *testing.T) {
+		cfg := tbua.CreateConfig()
+		cfg.RequestHeaders = append(cfg.RequestHeaders, tbua.HeaderConfig{
+			Name:  "Transfer-Encoding",
+			Value: "chunked",
+		})
+
+		p, err := tbua.New(context.Background(), noopHandler{}, cfg, pluginName)
+		if err != nil {
+			t.Fatalf("unexpected error during plugin creation: %v", err)
+		}
+
+		// Blocked: Transfer-Encoding is chunked
+		req := httptest.NewRequest(http.MethodPost, "/foobar", nil)
+		req.Header.Set("Transfer-Encoding", "chunked")
+		rr := httptest.NewRecorder()
+		p.ServeHTTP(rr, req)
+
+		if rr.Code != http.StatusForbidden {
+			t.Fatalf("unexpected status: got %v, expected %v for header %v", rr.Code, http.StatusForbidden, req.Header.Get("Transfer-Encoding"))
+		}
+
+		// Allowed: No Transfer-Encoding header
+		reqNoTE := httptest.NewRequest(http.MethodPost, "/foobar", nil)
+		rrNoTE := httptest.NewRecorder()
+		p.ServeHTTP(rrNoTE, reqNoTE)
+
+		if rrNoTE.Code != http.StatusTeapot {
+			t.Fatalf("unexpected status: got %v, expected %v for request without Transfer-Encoding", rrNoTE.Code, http.StatusTeapot)
+		}
+	})
 }

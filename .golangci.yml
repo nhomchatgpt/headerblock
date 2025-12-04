@@ -1,15 +1,13 @@
+version: 2
+
 run:
   timeout: 3m
-  skip-files: []
-  skip-dirs: []
 
 linters-settings:
   govet:
     enable-all: true
     disable:
       - fieldalignment
-  golint:
-    min-confidence: 0
   gocyclo:
     min-complexity: 12
   goconst:
@@ -23,20 +21,13 @@ linters-settings:
   godox:
     keywords:
       - FIXME
-  # gofumpt:
-    # extra-rules: true
 
 linters:
   enable-all: true
   disable:
     - varnamelen
-    - goimports
-    - interfacer # deprecated
-    - maligned # deprecated
-    - scopelint # deprecated
-    - golint # deprecated
     - cyclop # duplicate of gocyclo
-    - bodyclose # Too many false positives: https://github.com/timakin/bodyclose/issues/30
+    - bodyclose # Too many false positives
     - dupl
     - testpackage
     - tparallel
@@ -44,21 +35,29 @@ linters:
     - nlreturn
     - wsl
     - exhaustive
-    - exhaustivestruct
-    - goerr113
     - wrapcheck
-    - ifshort
     - noctx
     - lll
-    - gomnd
     - forbidigo
+    - ireturn
+    - depguard
+    - tagalign
+    - mnd
+    - exhaustruct
+    - perfsprint
+    - intrange
+    - copyloopvar
+    - testifylint
+
+formatters:
+  disable:
+    - goimports
     - gofumpt
 
 issues:
   exclude-use-default: false
   max-per-linter: 0
   max-same-issues: 0
-  exclude: []
   exclude-rules:
     - path: (.+)_test.go
       linters:
